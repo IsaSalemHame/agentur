@@ -1,0 +1,5 @@
+# Local secrets and build output
+firmware/include/secrets.h
+firmware/.pio/
+.claude/
+__pycache__/

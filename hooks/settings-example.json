@@ -1,0 +1,10 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [{ "hooks": [{ "type": "command", "command": "$HOME/.claude/hooks/agentur-status.sh prompt", "timeout": 3, "async": true }] }],
+    "PreToolUse":       [{ "matcher": "", "hooks": [{ "type": "command", "command": "$HOME/.claude/hooks/agentur-status.sh tool", "timeout": 3, "async": true }] }],
+    "PostToolUse":      [{ "matcher": "", "hooks": [{ "type": "command", "command": "$HOME/.claude/hooks/agentur-status.sh posttool", "timeout": 3, "async": true }] }],
+    "Notification":     [{ "matcher": "permission_prompt|agent_needs_input|elicitation_dialog|elicitation_url_dialog", "hooks": [{ "type": "command", "command": "$HOME/.claude/hooks/agentur-status.sh notify", "timeout": 3, "async": true }] }],
+    "Stop":             [{ "hooks": [{ "type": "command", "command": "$HOME/.claude/hooks/agentur-status.sh stop", "timeout": 3, "async": true }] }],
+    "SessionEnd":       [{ "hooks": [{ "type": "command", "command": "$HOME/.claude/hooks/agentur-status.sh end", "timeout": 3, "async": true }] }]
+  }
+}

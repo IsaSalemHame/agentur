@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clock simulator</title>
+<style>
+  :root { --bg: #0d1117; --panel: #161b22; --text: #e6edf3; --soft: #8b949e; --orange: #e8902e; --accent: #d97757; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.4 system-ui, sans-serif;
+         display: flex; flex-wrap: wrap; gap: 28px; justify-content: center; align-items: flex-start; padding: 24px 16px; }
+  .case { background: var(--orange); border-radius: 28px; padding: 26px; box-shadow: 0 10px 40px #0008; }
+  canvas { display: block; width: 480px; height: 480px; image-rendering: pixelated; border-radius: 10px; background: #000; }
+  @media (max-width: 560px) { canvas { width: 300px; height: 300px; } }
+  .ctl { background: var(--panel); border-radius: 14px; padding: 18px 20px; min-width: 280px; }
+  h2 { margin: 0 0 12px; font-size: 16px; }
+  .moods { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 18px; }
+  button { background: #21262d; color: var(--text); border: 1px solid #30363d; border-radius: 8px; padding: 8px 10px; font: inherit; cursor: pointer; }
+  button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  label { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 8px 0; }
+  input[type=range] { width: 140px; }
+  .row { display: flex; gap: 8px; margin-top: 14px; }
+  .soft { color: var(--soft); font-size: 13px; margin-top: 14px; }
+</style>
+</head>
+<body>
+  <div class="case"><canvas id="c" width="240" height="240"></canvas></div>
+  <div class="ctl">
+    <h2>State</h2>
+    <div class="moods" id="moods"></div>
+    <h2>Counters</h2>
+    <label>Working <span><input type="range" id="w" min="0" max="9" value="2"> <b id="wv">2</b></span></label>
+    <label>Recently done <span><input type="range" id="d" min="0" max="9" value="1"> <b id="dv">1</b></span></label>
+    <label>Needs answer <span><input type="range" id="a" min="0" max="9" value="0"> <b id="av">0</b></span></label>
+    <label>Online <input type="checkbox" id="o" checked></label>
+    <div class="row"><button id="pause">Pause</button><button id="slow">Slow motion</button></div>
+    <div class="soft" id="info">Drawn by the same scene.h as the clock.</div>
+  </div>
+<script>
+const moods = [[1, 'Working'], [2, 'Resting'], [3, 'Needs answer'], [4, 'Done'], [0, 'Sleeping']];
+let mood = 1, since = 0, paused = false, slow = false, t = 100000, last = performance.now(), busy = false;
+const box = document.getElementById('moods');
+for (const [m, name] of moods) {
+  const b = document.createElement('button'); b.textContent = name; b.dataset.m = m;
+  b.onclick = () => { mood = m; since = t; mark(); };
+  box.appendChild(b);
+}
+function mark() { for (const b of box.children) b.classList.toggle('on', +b.dataset.m === mood); }
+mark();
+for (const k of ['w', 'd', 'a']) { const el = document.getElementById(k); el.oninput = () => document.getElementById(k + 'v').textContent = el.value; }
+document.getElementById('pause').onclick = e => { paused = !paused; e.target.classList.toggle('on', paused); };
+document.getElementById('slow').onclick = e => { slow = !slow; e.target.classList.toggle('on', slow); };
+const ctx = document.getElementById('c').getContext('2d');
+let frames = 0, fpsT = performance.now();
+async function tick() {
+  const now = performance.now();
+  if (!paused) t += (now - last) * (slow ? 0.25 : 1);
+  last = now;
+  if (!busy) {
+    busy = true;
+    const q = new URLSearchParams({ m: mood, t: Math.floor(t), s: Math.floor(since),
+      w: document.getElementById('w').value, d: document.getElementById('d').value,
+      a: document.getElementById('a').value, o: document.getElementById('o').checked ? 1 : 0 });
+    try {
+      const r = await fetch('/frame?' + q);
+      const img = await createImageBitmap(await r.blob());
+      ctx.drawImage(img, 0, 0);
+      frames++;
+    } catch (e) { document.getElementById('info').textContent = 'Could not reach the simulator.'; }
+    busy = false;
+  }
+  if (now - fpsT > 1000) {
+    document.getElementById('info').textContent = `Drawn by the same scene.h as the clock. ${frames} frames/s in the browser.`;
+    frames = 0; fpsT = now;
+  }
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
